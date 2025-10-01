@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  system-monitor:
+    image: shaneee/system-monitor:${VERSION:-latest}
+    container_name: system-monitor
+    network_mode: host
+    privileged: true
+    environment:
+      - NODE_ENV=production
+      - CONTAINER_VERSION=${VERSION:-0.0.31}
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+      - GUNICORN_WORKERS=2
+      - GUNICORN_THREADS=4
+      - GUNICORN_TIMEOUT=120
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /run:/host/run:ro
+      - /var:/host/var:ro
+      - /mnt:/host/mnt:ro
+      - /dev:/host/dev:ro
+      - ./appdata:/app/data:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "--connect-timeout", "5", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    labels:
+      - "net.unraid.docker.icon=https://cdn-icons-png.flaticon.com/512/148/148824.png"
+      - "net.unraid.docker.webui=http://[IP]:[PORT:3000]/"
+      - "org.opencontainers.image.title=System Monitor"
+      - "org.opencontainers.image.description=Real-time system monitoring dashboard"
+      - "org.opencontainers.image.url=https://github.com/shaneee/system-monitor"

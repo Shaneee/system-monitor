@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Real-time system monitoring dashboard for Unraid">
+    <meta name="theme-color" content="#2563eb">
+    <title>System Monitor - v{{ version }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js for historical data -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📊</text></svg>">
+</head>
+  <body>
+    <div class="container">
+      <header>
+        <div class="header-content">
+          <h1>
+            <i class="fas fa-desktop"></i> System Monitor
+          </h1>
+          <div class="version">v{{ version }}</div>
+        </div>
+        <div class="header-controls">
+          <button class="theme-toggle" id="theme-toggle">
+            <i class="fas fa-moon"></i>
+            <span>Dark Mode</span>
+          </button>
+          <button id="refresh-btn" class="btn btn-primary">
+            <i class="fas fa-sync"></i> Refresh </button>
+          <select id="refresh-interval" class="form-select">
+            <option value="1000">1s</option>
+            <option value="2000" selected>2s</option>
+            <option value="5000">5s</option>
+            <option value="10000">10s</option>
+          </select>
+        </div>
+      </header>
+      <!-- Alerts Container -->
+      <div id="alerts-container" class="alerts-container"></div>
+      <!-- Controls Section -->
+      <div class="controls">
+        <button id="export-btn" class="btn btn-secondary">
+          <i class="fas fa-download"></i>
+          <span>Export Data</span>
+        </button>
+        <button id="high-contrast-toggle" class="btn btn-secondary">
+          <i class="fas fa-contrast"></i>
+          <span>High Contrast</span>
+        </button>
+        <button id="layout-toggle" class="btn btn-secondary">
+          <i class="fas fa-th"></i>
+          <span>Customize Layout</span>
+        </button>
+        <button id="alerts-toggle" class="btn btn-secondary">
+          <i class="fas fa-bell"></i>
+          <span>Alerts Settings</span>
+        </button>
+        <button id="help-btn" class="btn btn-secondary">
+          <i class="fas fa-question-circle"></i>
+          <span>Help</span>
+        </button>
+      </div>
+      <!-- Charts Container -->
+      <div class="charts-container" id="charts-container" style="display: none;">
+        <div class="chart-card">
+          <h3>
+            <i class="fas fa-chart-line"></i> CPU Usage History
+          </h3>
+          <canvas id="cpu-chart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>
+            <i class="fas fa-memory"></i> Memory Usage History
+          </h3>
+          <canvas id="memory-chart"></canvas>
+        </div>
+        <div class="chart-card">
+          <h3>
+            <i class="fas fa-network-wired"></i> Network Usage History
+          </h3>
+          <canvas id="network-chart"></canvas>
+        </div>
+      </div>
+      <!-- Main Dashboard -->
+      <div class="dashboard" id="dashboard">
+        <!-- CPU Card -->
+        <div class="card" data-section="cpu" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-microchip"></i> CPU
+            </h2>
+          </div>
+          <div id="cpu-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading CPU data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- Memory Card -->
+        <div class="card" data-section="memory" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-memory"></i> Memory
+            </h2>
+          </div>
+          <div id="memory-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading memory data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- Storage Pools Card -->
+        <div class="card" data-section="pools" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-database"></i> Storage Pools
+            </h2>
+          </div>
+          <div id="pools-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading storage data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- GPU Card -->
+        <div class="card" data-section="gpu" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-video"></i> GPU
+            </h2>
+          </div>
+          <div id="gpu-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading GPU data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- Network Card -->
+        <div class="card" data-section="network" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-network-wired"></i> Network
+            </h2>
+          </div>
+          <div id="network-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading network data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- System Info Card -->
+        <div class="card" data-section="system" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-info-circle"></i> System Info
+            </h2>
+          </div>
+          <div id="system-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading system info...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <!-- Additional Metrics Cards -->
+        <div class="card" data-section="diskio" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-hdd"></i> Disk I/O
+            </h2>
+          </div>
+          <div id="disk-io-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading disk I/O data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <div class="card" data-section="temps" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-thermometer-half"></i> Temperatures
+            </h2>
+          </div>
+          <div id="temp-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading temperature data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+        <div class="card" data-section="processes" draggable="true">
+          <div class="card-header">
+            <h2>
+              <i class="fas fa-tasks"></i> Top Processes
+            </h2>
+          </div>
+          <div id="process-info" class="card-content">
+            <div class="loading">
+              <div class="loading-spinner"></div>
+              <span>Loading process data...</span>
+            </div>
+          </div>
+          <div class="error-message" style="display: none;"></div>
+        </div>
+      </div>
+      <!-- Status Bar -->
+      <div class="status-bar">
+        <div class="last-update">
+          <i class="fas fa-sync-alt"></i> Last updated: <span id="last-update-time">Never</span>
+        </div>
+        <div class="connection-status">
+          <i class="fas fa-wifi" id="connection-icon"></i>
+          <span id="connection-status">Connected</span>
+        </div>
+        <div class="performance-stats">
+          <span id="load-time">Load: 0ms</span>
+          <span id="memory-usage">Memory: 0MB</span>
+        </div>
+      </div>
+      <!-- Footer -->
+      <footer class="footer">
+        <p> System Monitor v{{ version }} | Created with <i class="fas fa-heart"></i> and <i class="fas fa-coffee"></i> by Shaneee | <a href="#" id="export-link">Export Data</a> | <a href="/health" target="_blank">Health Check</a> | <a href="/version.json" target="_blank">Version Info</a>
+        </p>
+      </footer>
+    </div>
+    <!-- Modals -->
+    <div id="help-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>
+            <i class="fas fa-question-circle"></i> Keyboard Shortcuts
+          </h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="shortcut-item">
+            <kbd>Ctrl/Cmd + R</kbd>
+            <span>Refresh data</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl/Cmd + E</kbd>
+            <span>Export data</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl/Cmd + D</kbd>
+            <span>Toggle dark/light mode</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl/Cmd + H</kbd>
+            <span>Toggle charts</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Ctrl/Cmd + L</kbd>
+            <span>Toggle layout mode</span>
+          </div>
+          <div class="shortcut-item">
+            <kbd>Esc</kbd>
+            <span>Close modals/cancel actions</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="alerts-modal" class="modal" style="display: none;">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>
+            <i class="fas fa-bell"></i> Alert Settings
+          </h3>
+          <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div class="alert-setting">
+            <label>CPU Usage Threshold:</label>
+            <input type="number" id="cpu-threshold" min="50" max="100" value="90">%
+          </div>
+          <div class="alert-setting">
+            <label>Memory Usage Threshold:</label>
+            <input type="number" id="memory-threshold" min="50" max="100" value="85">%
+          </div>
+          <div class="alert-setting">
+            <label>Temperature Threshold:</label>
+            <input type="number" id="temp-threshold" min="50" max="100" value="80">°C
+          </div>
+          <div class="alert-setting">
+            <label>Disk Usage Threshold:</label>
+            <input type="number" id="disk-threshold" min="50" max="100" value="90">%
+          </div>
+          <button id="save-alerts" class="btn btn-primary">Save Settings</button>
+        </div>
+      </div>
+    </div>
+    <script type="module" src="{{ url_for('static', filename='script.js') }}"></script>
+  </body>
+</html>

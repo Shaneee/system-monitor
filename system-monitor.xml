@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Container version="2">
+  <Name>System Monitor</Name>
+  <Repository>shaneee/system-monitor</Repository>
+  <Registry>https://hub.docker.com/r/shaneee/system-monitor</Registry>
+  <Network>host</Network>
+  <Privileged>true</Privileged>
+  <Support>https://github.com/shaneee/system-monitor/issues</Support>
+  <Project>https://github.com/shaneee/system-monitor</Project>
+  <Overview>
+    A real-time system monitoring dashboard for Unraid with NVIDIA GPU support, temperature monitoring, and performance metrics. Monitors CPU, memory, storage pools, network, temperatures, and GPU usage.
+  </Overview>
+  <Category>Monitoring</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/shaneee/system-monitor/main/system-monitor.xml</TemplateURL>
+  <Icon>https://cdn-icons-png.flaticon.com/512/148/148824.png</Icon>
+  
+  <Config Name="WebUI Port" Target="3000" Default="3000" Mode="tcp" Type="Port" Display="always" Required="true">3000</Config>
+  
+  <!-- Required host paths for system monitoring -->
+  <Config Name="Host Path: /proc" Target="/host/proc" Default="/proc" Mode="ro" Type="Path" Display="always" Required="true">/proc</Config>
+  <Config Name="Host Path: /sys" Target="/host/sys" Default="/sys" Mode="ro" Type="Path" Display="always" Required="true">/sys</Config>
+  <Config Name="Host Path: /mnt" Target="/host/mnt" Default="/mnt" Mode="ro" Type="Path" Display="always" Required="true">/mnt</Config>
+  <Config Name="Host Path: /var" Target="/host/var" Default="/var" Mode="ro" Type="Path" Display="always" Required="true">/var</Config>
+  
+  <!-- Hardcoded GPU support (always required) -->
+  <PostArgs>--gpus all</PostArgs>
+</Container>
