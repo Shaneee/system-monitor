@@ -23,6 +23,6 @@
   <Config Name="Host Path: /mnt" Target="/host/mnt" Default="/mnt" Mode="ro" Type="Path" Display="always" Required="true">/mnt</Config>
   <Config Name="Host Path: /var" Target="/host/var" Default="/var" Mode="ro" Type="Path" Display="always" Required="true">/var</Config>
   
-  <!-- Hardcoded GPU support (always required) -->
-  <PostArgs>--gpus all</PostArgs>
+  <!-- GPU support (always required) -->
+  <ExtraParams>--gpus all</ExtraParams>
 </Container>
